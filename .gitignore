@@ -1,0 +1,9 @@
+.ipynb_checkpoints/*
+*-checkpoint.ipynb
+__pycache__
+
+texaux/*
+*.pdf
+
+papers
+manuscript
