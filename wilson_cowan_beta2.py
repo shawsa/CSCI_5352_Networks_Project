@@ -98,7 +98,7 @@ def nazemi_jamali_network(N, coupling_weight=.8, neighbor_radius=3, random_edges
 
     # ring connections
     coupling_edges = [(a, (a+i)%N, coupling_weight) for a in range(N) for i in range(1, neighbor_radius+1)]
-    
+
     coupling_edges = randomize_edges(N, coupling_edges, random_edges)
 
     EE_edges = EE_edges + coupling_edges
