@@ -28,9 +28,7 @@ def series_midpoint(series):
 def quantile_90(series):
     return np.quantile(series, 0.9)
 
-threshold_function = quantile_90
-
-def get_spike_indices_approx(ts, series, threshold_function=threshold_function):
+def get_spike_indices_approx(ts, series, threshold_function):
     '''
     Find approximate spike indices for the given time series. Applies a Heaviside filter
     with a threshold decided by the provided threshold_function. Then Does a 2 point finite
@@ -43,8 +41,8 @@ def get_spike_indices_approx(ts, series, threshold_function=threshold_function):
     spike_mask = rising_signal == 1
     return np.arange(len(series))[spike_mask]
 
-def get_spike_indices(ts, series, threshold_function=threshold_function, window=10):
-    spike_indices_approx = get_spike_indices_approx(ts, series, threshold_function=threshold_function)
+def get_spike_indices(ts, series, threshold_function, window=10):
+    spike_indices_approx = get_spike_indices_approx(ts, series, threshold_function)
     spike_indices = [refine_max(guess, series) for guess in spike_indices_approx]
     spike_indices = [index for index in spike_indices if index is not None]
     spike_indices = list(set(spike_indices)) # remove duplicates
@@ -61,18 +59,57 @@ def get_kuramoto_phase(t, ts, spike_indices):
     phase = (t-t0)/(tf-t0) * 2*np.pi
     return phase
 
-def series_to_phase(ts, series, threshold_function=threshold_function):
-    spike_indices = get_spike_indices(ts, series, threshold_function=threshold_function)
-    phases = [get_kuramoto_phase(t, ts, spike_indices) for t in ts]
+def series_to_phase(ts, series, threshold_function):
+    spike_indices = get_spike_indices(ts, series, threshold_function)
+    phases = np.empty(len(ts))
+    phases[:spike_indices[0]-1] = np.nan
+    for upper, lower in zip(spike_indices[1:], spike_indices[:-1]):
+        phases[lower:upper] = np.linspace(0, 2*np.pi, upper-lower)
+    phases[upper:] = np.nan
     return phases
 
-def kuramoto_measure(ts, time_series, threshold_function=threshold_function):
+def kuramoto_measure(ts, time_series, threshold_function=quantile_90):
     phases = np.empty(time_series.shape)
     for series_index, series in enumerate(time_series):
-        phases[series_index] = series_to_phase(ts, series, threshold_function=threshold_function)
+        phases[series_index] = series_to_phase(ts, series, threshold_function)
     
     kuramoto = np.abs(np.sum(np.exp(1j*phases), axis=0)/phases.shape[0])
     return kuramoto
 
-def average_kuramoto(kuramoto):
-    return np.mean(kuramoto[np.logical_not(np.isnan(kuramoto))])
+def _nan_filter(series):
+    return series[np.logical_not(np.isnan(series))]
+
+def average_kuramoto(ts, time_series, time_span=None, threshold_function=quantile_90, kuramoto=None):
+    if time_span is None:
+        t_start_index = 0
+        t_stop_index = len(ts) - 1 
+    else:
+        assert len(time_span) == 2
+        t_start, t_stop = time_span
+        t_start_index = np.argmin(np.abs(ts - t_start))
+        t_stop_index = np.argmin(np.abs(ts - t_stop))
+    if kuramoto is None:
+        kuramoto = kuramoto_measure(ts, time_series, threshold_function=threshold_function)
+    kuramoto = kuramoto[t_start_index: t_stop_index]
+    return np.mean(_nan_filter(kuramoto))
+
+
+def pearson_mean(ts, series, time_span=None):
+    '''
+    The average of the pair-wise Pearson corrolation coefficients between each
+    time series.
+    '''
+    if time_span is None:
+        t_start_index = 0
+        t_stop_index = len(ts) - 1 
+    else:
+        assert len(time_span) == 2
+        t_start, t_stop = time_span
+        t_start_index = np.argmin(np.abs(ts - t_start))
+        t_stop_index = np.argmin(np.abs(ts - t_stop))
+    cor_mat = np.corrcoef(series[t_start_index: t_stop_index], rowvar=False)
+    N = cor_mat.shape[0]
+    num_pairs = N*(N-1)/2
+    return np.sum(np.triu(cor_mat, k=1))/num_pairs
+
+

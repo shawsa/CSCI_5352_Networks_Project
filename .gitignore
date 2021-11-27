@@ -7,3 +7,6 @@ texaux/*
 
 papers
 manuscript
+
+raw_data/*
+!raw_data/readme
