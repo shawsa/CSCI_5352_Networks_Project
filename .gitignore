@@ -10,3 +10,6 @@ manuscript
 
 raw_data/*
 !raw_data/readme
+
+real_world_networks/*
+!real_world_networks/links.md

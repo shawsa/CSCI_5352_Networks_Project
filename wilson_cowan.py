@@ -171,6 +171,7 @@ def perc_network(n, coupling_weight=.8, random_edges = 0):
             coupling_edges.append((node, grid_to_node(x,y+1,n), coupling_weight))
 
     coupling_edges = randomize_edges(N, coupling_edges, random_edges)
+    edge_list = [(a,b) for a, b, w in coupling_edges]
 
     EE_edges = EE_edges + coupling_edges
     
@@ -195,7 +196,7 @@ def perc_network(n, coupling_weight=.8, random_edges = 0):
     wcn.E0 = np.random.random(N)
     wcn.I0 = np.random.random(N)
     
-    return wcn, x_locations, y_locations
+    return wcn, edge_list, x_locations, y_locations
 
 def hex_network(hex_radius, coupling_weight=.8, random_edges = 0):
     
@@ -231,6 +232,7 @@ def hex_network(hex_radius, coupling_weight=.8, random_edges = 0):
          if a!=b and dist_squared(point1, point2)<1.1]
 
     coupling_edges = randomize_edges(N, coupling_edges, random_edges)
+    edge_list = [(a,b) for a, b, w in coupling_edges]
 
     EE_edges = EE_edges + coupling_edges
 
@@ -247,5 +249,5 @@ def hex_network(hex_radius, coupling_weight=.8, random_edges = 0):
     wcn.E0 = np.random.random(N)
     wcn.I0 = np.random.random(N)
     
-    return wcn, x_locations, y_locations
+    return wcn, edge_list, x_locations, y_locations
 

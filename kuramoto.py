@@ -41,9 +41,9 @@ def get_spike_indices_approx(ts, series, threshold_function):
     spike_mask = rising_signal == 1
     return np.arange(len(series))[spike_mask]
 
-def get_spike_indices(ts, series, threshold_function, window=10):
+def get_spike_indices(ts, series, threshold_function, window):
     spike_indices_approx = get_spike_indices_approx(ts, series, threshold_function)
-    spike_indices = [refine_max(guess, series) for guess in spike_indices_approx]
+    spike_indices = [refine_max(guess, series, window) for guess in spike_indices_approx]
     spike_indices = [index for index in spike_indices if index is not None]
     spike_indices = list(set(spike_indices)) # remove duplicates
     spike_indices.sort()
@@ -59,8 +59,8 @@ def get_kuramoto_phase(t, ts, spike_indices):
     phase = (t-t0)/(tf-t0) * 2*np.pi
     return phase
 
-def series_to_phase(ts, series, threshold_function):
-    spike_indices = get_spike_indices(ts, series, threshold_function)
+def series_to_phase(ts, series, threshold_function, window):
+    spike_indices = get_spike_indices(ts, series, threshold_function, window=window)
     phases = np.empty(len(ts))
     phases[:spike_indices[0]-1] = np.nan
     for upper, lower in zip(spike_indices[1:], spike_indices[:-1]):
@@ -68,10 +68,10 @@ def series_to_phase(ts, series, threshold_function):
     phases[upper:] = np.nan
     return phases
 
-def kuramoto_measure(ts, time_series, threshold_function=quantile_90):
+def kuramoto_measure(ts, time_series, threshold_function=quantile_90, window=10):
     phases = np.empty(time_series.shape)
     for series_index, series in enumerate(time_series):
-        phases[series_index] = series_to_phase(ts, series, threshold_function)
+        phases[series_index] = series_to_phase(ts, series, threshold_function, window=window)
     
     kuramoto = np.abs(np.sum(np.exp(1j*phases), axis=0)/phases.shape[0])
     return kuramoto
